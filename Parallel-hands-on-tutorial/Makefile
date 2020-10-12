@@ -1,7 +1,7 @@
 # change these three according to your environment, or load apropriate
 # modules(1)
-HDF5=/mnt/scr1/epourmal/HUG-Tutorial/build/hdf5
-MPICC=/mnt/scr1/epourmal/HUG-Tutorial/build/hdf5/bin/h5pcc
+HDF5="add your path to HDF5"
+MPICC="add you path to h5pcc"
 
 CPPFLAGS=-I${HDF5}/include
 LDFLAGS=-L${HDF5}/lib
