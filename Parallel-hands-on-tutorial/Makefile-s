@@ -1,0 +1,22 @@
+# change these three according to your environment, or load apropriate
+# modules(1)
+HDF5=/mnt/scr1/epourmal/HUG-Tutorial/build_seq/hdf5
+CC=/mnt/scr1/epourmal/HUG-Tutorial/build_seq/hdf5/bin/h5cc
+
+CPPFLAGS=-I${HDF5}/include
+LDFLAGS=-L${HDF5}/lib
+
+
+PROGRAMS= h5_ex0 h5_ex1 
+
+all: $(PROGRAMS)
+
+h5_ex0: h5_ex0.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) $^ -o $@ $(LDFLAGS) -lhdf5
+
+h5_ex1: h5_ex1.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) $^ -o $@ $(LDFLAGS) -lhdf5
+
+clean:
+	rm -f *.o $(PROGRAMS)
+
