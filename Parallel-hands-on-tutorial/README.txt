@@ -53,4 +53,4 @@ open dataset and writes to each dataset in h5par_ex2d.h5
 
 h5par-comparison.c 
 Any number of ranks can be used to create, write, and read a dataset in h5par_comp.h5
-The pprgram can be compiled to use colletive metadata and raw data writes and reads.
+The program can be compiled to use colletive metadata and raw data writes and reads.

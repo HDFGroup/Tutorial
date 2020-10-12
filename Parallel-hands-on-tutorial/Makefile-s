@@ -1,7 +1,7 @@
 # change these three according to your environment, or load apropriate
 # modules(1)
-HDF5=/mnt/scr1/epourmal/HUG-Tutorial/build_seq/hdf5
-CC=/mnt/scr1/epourmal/HUG-Tutorial/build_seq/hdf5/bin/h5cc
+HDF5="add your path to HDF5 installtion - sequential"
+CC="add your path to h5cc"
 
 CPPFLAGS=-I${HDF5}/include
 LDFLAGS=-L${HDF5}/lib
