@@ -7,11 +7,17 @@ CPPFLAGS=-I${HDF5}/include
 LDFLAGS=-L${HDF5}/lib
 
 
-PROGRAMS= h5par_ex0 h5par_ex1a h5par_ex1b h5par_ex1c h5par_ex1d\
+PROGRAMS= h5_ex0 h5_ex1 h5par_ex0 h5par_ex1a h5par_ex1b h5par_ex1c h5par_ex1d\
 	  h5par_ex2a h5par_ex2b h5par_ex2c h5par_ex2d h5par_ex2e \
 	  h5par-comparison h5par-comparison-collio h5par-comparison-collmd
 
 all: $(PROGRAMS)
+
+h5_ex0: h5_ex0.c
+	$(MPICC) $(CFLAGS) $(CPPFLAGS) $^ -o $@ $(LDFLAGS) -lhdf5
+
+h5_ex1: h5_ex1.c
+	$(MPICC) $(CFLAGS) $(CPPFLAGS) $^ -o $@ $(LDFLAGS) -lhdf5
 
 h5par_ex0: h5par_ex0.c
 	$(MPICC) $(CFLAGS) $(CPPFLAGS) $^ -o $@ $(LDFLAGS) -lhdf5
