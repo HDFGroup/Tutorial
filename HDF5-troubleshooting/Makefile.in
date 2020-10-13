@@ -34,7 +34,9 @@ obj = $(csrc:.c=.o)
 out/hdf5_iotest: $(obj)
 > mkdir -p $(@D)
 > $(CC) -o $@ $^ $(LDFLAGS)
+> mkdir -p $(PREFIX)/bin
 > cp $@ $(PREFIX)/bin
+> cp scripts/* $(PREFIX)/bin
 > cp $(ini) $(PREFIX)/bin
 
 clean:
