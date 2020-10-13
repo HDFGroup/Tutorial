@@ -1,0 +1,178 @@
+#+TITLE: Introduction to H5CLUSTER
+#+AUTHOR: Steven Varga and Gerd Heber
+#+DATE: [2020-10-13 Tue]
+
+* Goals
+  1. Learn how to log into a cluster instance.
+  2. Learn how to configure your environment.
+  3. Learn how to load software dependencies with SPACK.
+  4. Learn how to run applications with SLURM.
+  5. Ground rules for this tutorial
+
+* Logging into a cluster instance
+** Connecting with SSH
+   #+begin_src sh
+   ssh <username>@cluster.hdfgroup.org
+   #+end_src
+
+* Exploring and configuring your environment
+  #+begin_src sh
+  echo $SHELL
+  #+end_src
+
+  #+begin_src sh
+  pwd
+  #+end_src
+
+  #+begin_src sh
+  mount
+  #+end_src
+
+  #+begin_src sh
+  which spack
+  #+end_src
+
+  #+begin_src sh
+  sinfo -N -l
+  #+end_src
+
+
+* Spack
+** Listing available packages
+   #+begin_src sh
+   spack list
+   #+end_src
+
+** List packages containing a keyword =kwd=
+   #+begin_src sh
+   spack list <kwd>
+   #+end_src
+
+** Print package information
+   #+begin_src sh
+   spack info <pkg>
+   #+end_src
+
+** Display package locations
+   #+begin_src sh
+   spack find --paths
+   #+end_src
+
+*** Specific package location
+    #+begin_src sh
+    spack find --paths hdf5
+    #+end_src
+
+
+** Loading a package
+   #+begin_src sh
+   spack load <package-spec>
+   #+end_src
+
+***  Also load dependencies
+   #+begin_src sh
+   spack load -r <package-spec>
+   #+end_src
+
+** Compiling applications
+   Assuming you've loaded all dependencies, such as the HDF5 library, use your
+   build scripts just as you would in a local environment.
+*** Listing compilers
+    #+begin_src sh
+    spack compilers
+    #+end_src
+
+*** Discovering include paths and library locations
+    #+begin_src sh
+    spack load -r <package-spec>
+    #+end_src
+
+
+* SLURM
+** What it does
+   - Workload manager that manages resources (CPUs and storage) in partitions
+   - Allocates resources to jobs
+   - Ensures that people don't step on each others toes
+** Listing available resources
+   #+begin_src sh
+   sinfo -N -l
+   #+end_src
+
+** Running a job interactively
+   Run =hostname= on 3 nodes (computers).
+   #+begin_src sh
+   srun -N 3 -l /bin/hostname
+   #+end_src
+
+   Run =hostname= in four tasks
+   #+begin_src sh
+   srun -n 4 -l /bin/hostname
+   #+end_src
+
+   Creating an interactive shell:
+   #+begin_src sh
+   srun --pty bash
+   #+end_src
+
+** Running a job in batch mode
+   Listing the queue content:
+   #+begin_src sh
+   squeue
+   #+end_src
+
+   A sample batch file =submit.sh=:
+   #+begin_example
+   #!/bin/bash
+   #
+   #SBATCH --job-name=test
+   #SBATCH --output=res.txt
+   #
+   #SBATCH --ntasks=1
+   #SBATCH --time=10:00
+   #SBATCH --mem-per-cpu=100
+
+   srun hostname
+   srun sleep 60
+   #+end_example
+
+   Submitting the batch file:
+   #+begin_src sh
+   sbatch submit.sh
+   #+end_src
+
+   An MPI batch job:
+   #+begin_example
+   #!/bin/bash
+   #
+   #SBATCH --job-name=test_mpi
+   #SBATCH --output=res_mpi.txt
+   #
+   #SBATCH --ntasks=4
+   #SBATCH --time=10:00
+   #SBATCH --mem-per-cpu=100
+
+   srun hello.mpi
+   #+end_example
+
+** Cancelling a job
+   By job ID:
+   #+begin_src sh
+   scancel <job_id>
+   #+end_src
+
+   By user name:
+   #+begin_src sh
+   scancel -u <username>
+   #+end_src
+
+
+* Ground rules
+  - *WARNING:* This environment is temporary and may fail in unexpected ways.
+    - Make local copies of anything that's important to you!
+    - The HDF Group is not liable for any loss or damage of your data.
+  - This is a sandbox. You don't need to ask for permission. Try and explore the setup!
+
+* References
+  - [[http://cluster.vargaconsulting.ca/][H5CLUSTER documentation]]
+  - [[https://spack.readthedocs.io/en/latest/][Spack documentation]]
+  - [[https://slurm.schedmd.com/documentation.html][Slurm Workload Documentation]]
