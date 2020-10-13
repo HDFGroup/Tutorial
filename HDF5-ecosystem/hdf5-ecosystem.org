@@ -73,7 +73,7 @@
      h5save(A, B, D, file="hug2020_r.h5")
      h5dump("hug2020_r.h5")
      #+end_src
- 
+
    - Support for operators to extract or replace parts of an object
      - =[= - subset HDF5 datasets (read, write)
      - =$= - read or write HDF5 objects via location (handle) + name reference
@@ -152,10 +152,21 @@
     HDFqlCLI --execute="
     CREATE FILE hdfql.h5;
     USE FILE hdfql.h5;
+    CREATE GROUP group1/subgroup1, group1/subgroup2;
+    CREATE DATASET group1/dataset1 AS INT(3, 2);
+    CREATE CHUNKED(2, 2, 2) DATASET group1/dataset2 AS SMALLINT(4, 6, 8);
     CREATE DATASET dset AS COMPOUND(timestamp AS INT, reading AS FLOAT)(0 TO UNLIMITED);
+    CREATE CHUNKED DATASET group2/dataset1, group2/dataset2, group2/dataset3 AS FLOAT(100, 500) ENABLE SHUFFLE ZLIB;
+    CREATE ATTRIBUTE attribute1 AS VARCHAR VALUES(“Hierarchical Data Format”)
+    CREATE ATTRIBUTE attribute2 AS UNSIGNED INT VALUES(1789);
+    INSERT INTO group1/dataset1 VALUES((7, 8), (3, 5), (4,1));
+    CREATE ATTRIBUTE group1/attribute1, group2/attribute1 AS VARFLOAT(2);
+    INSERT INTO group1/attribute1 VALUES((6.72, 8.98), (3.52, 5.35, 4.11));
     SHOW
     "
     #+end_src
+
+    Also supports =INSERT= and dump from/to text and binary files.
 
   - Data Query Language (DQL)
 
@@ -186,22 +197,74 @@
    - Host languages: C, C++, Java, Python, C#, Fortran and R
    - HDFql API: query execution, cursor and variable management, MPI interaction
      #+begin_src C
-     A C example
+     /* Example source: Example #2 from https://www.hdfql.com/examples/ */
+
+     #include <stdlib.h>
+     #include <stdio.h>
+     #include “HDFql.h”
+
+     int main(int argc, char *argv[])
+     {
+           int values[200][150];
+           char script[1024];
+           int x;
+           int y;
+           hdfql_execute(“CREATE FILE painters.h5”);
+           hdfql_execute(“USE FILE painters.h5”);
+           hdfql_execute(“CREATE GROUP picasso ORDER TRACKED”);
+           hdfql_execute(“CREATE CHUNKED(40, 30) DATASET picasso/guernica AS INT(200, 150) ENABLE FLETCHER32”);
+           for(x = 0; x < 200; x++)
+           {
+                 for(y = 0; y < 150; y++)
+                 {
+                       values[x][y] = x * 150 + y;
+                 }
+           }
+           sprintf(script, “INSERT INTO picasso/guernica VALUES FROM MEMORY %d”, hdfql_variable_transient_register(values));
+           hdfql_execute(script);
+           hdfql_execute(“CREATE ATTRIBUTE picasso/guernica/subject AS UTF8 VARCHAR VALUES(\”guerra civil española\”)”);
+           hdfql_execute(“CLOSE FILE”);
+           return EXIT_SUCCESS;
+     }
      #+end_src
 
 ** Performance
    - Overhead depends on the host language integration (?)
    - I'm not aware of a detailed analysis
 ** Parallelism
-   - Using automatic (threaded) parallelism whenever possible
+   - HDFql is using automatic (threaded) parallelism whenever possible
    - Parallel HDF5 is supported
      #+begin_src C
-     An MPI example
-     #+end_src
+     #include <stdlib.h>
+     #include <stdio.h>
+     #include “HDFql.h”
 
-*** TODO: Write an MPI example!
+     int main(int argc, char *argv[])
+     {
+           char script[100];
+           int rank;
+           hdfql_execute(“CREATE PARALLEL FILE experiment.h5”);
+           hdfql_execute(“USE PARALLEL FILE experiment.h5”);
+           hdfql_execute(“CREATE DATASET measurements AS INT(4)”);
+           rank = hdfql_mpi_get_rank();
+           sprintf(script, “INSERT INTO PARALLEL measurements(%d) VALUES(%d)”, rank, rank * 10);
+           hdfql_execute(script);
+           hdfql_execute(“CLOSE FILE”);
+           return EXIT_SUCCESS;
+     }
+      #+end_src
 
 ** Abstraction
-   - SQL-like
-   - Style: you have to think in (at least) two languages simultaneously
-   - The more seamless the embedding, the better
+   - SQL-like (Great!)
+   - Style: /You have to think ahead in two languages!/ (Can be a challenge.)
+   - The more seamless the embedding, the better (Last mile problem?)
+
+* Summary
+
+  Without its ecosystem, HDF5 would be just another obscure library, file format, ...
+
+  We (The HDF Group) could not possibly go it alone.
+
+  Communities, institutions, projects, individual contributors, and companies make it thrive.
+
+  Thank you for support.
