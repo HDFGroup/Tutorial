@@ -1,7 +1,7 @@
 # change these three according to your environment, or load apropriate
 # modules(1)
 #HDF5="add your path to HDF5"
-MPICC=h5pcc"
+MPICC=h5pcc
 
 #CPPFLAGS=-I${HDF5}/include
 #LDFLAGS=-L${HDF5}/lib
