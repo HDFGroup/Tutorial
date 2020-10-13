@@ -1,0 +1,200 @@
+#+TITLE: HDF5 Productivity - The Role of Language
+#+DATE: [2020-10-09 Fri]
+#+AUTHOR: Gerd Heber
+
+#+PROPERTY: header-args :eval never-export
+#+PROPERTY: header-args:sh :session hdfql
+#+PROPERTY: header-args:R :session rhdf5
+
+* Problem
+
+  - In-memory repsentation of data <-> HDF5 container(s)
+  - Object in language X <-> HDF5 fragments
+
+  IL = *I* ntermediate *L* anguage
+
+  |                | Bottom-up          | Through-the-middle   | Top-down             |
+  |----------------+--------------------+----------------------+----------------------|
+  | Idiomaticity   | C by other means   | IL-dependent         | No-API HDF5          |
+  | Control        | Full               | IL-dependent         | Redcuded (sometimes) |
+  | Learning curve | Steep              | Second language (IL) | Shallow              |
+  | Portability*   | Low                | High (potentially)   | Mixed                |
+  | Performance    | High               | High (potentially)   | Mixed                |
+  | Parallelism    | C-like             | IL-dependent         | Non-trivial          |
+  | Abstraction    | Low                | High                 | Intuitive            |
+  | Examples       | FFI (JNI, PInvoke) | HDFql                | h5py, rhdf5, H5CPP   |
+
+  (*) Portability between languages
+
+*  =rhdf5=
+
+  - =rhdf5= provides high-level R functions and bindings of several C functions
+    - See [[https://bioconductor.org/packages/3.11/bioc/html/rhdf5.html][rhdf5 Reference Manual]]
+  - Install from [[https://www.bioconductor.org/][Bioconductor]]:
+    #+begin_src R :results output
+    #install.packages("BiocManager")
+    #BiocManager::install("rhdf5")
+    library(rhdf5)
+    h5version()
+    #+end_src
+
+  - Full disclosure: /I'm a beginner-level R user/
+** Idiomaticity
+   - R has basic scalar types, lists, vectors, matrices, and the mighty /dataframe/
+    (list of [named] variables of the same number of rows with unique row names)
+    #+begin_src R :results output :format drawer
+    mtcars
+    #+end_src
+
+   - Slicing, dicing, indexing
+     - Column vector
+       #+begin_src R
+       mtcars$mpg[c(1,2,3)]
+       #+end_src
+
+     - Column slice
+       #+begin_src R :colnames yes
+       mtcars[c("mpg", "hp")][c(1,2,3),]
+       #+end_src
+
+     - Row slice
+       #+begin_src R :colnames yes
+       mtcars[c("Volvo 142E", "Porsche 914-2"),]
+       #+end_src
+
+   - About a dozen high-level fire-and-forget functions
+     #+begin_src R :results silent
+     h5createFile("hug2020_r.h5")
+     h5write(mtcars, file="hug2020_r.h5", "mtcars")
+     #+end_src
+   - Support for operators to extract or replace parts of an object
+     - =[= - subset HDF5 datasets (read, write)
+     - =$= - read or write HDF5 objects via location (handle) + name reference
+       #+begin_src R :results output
+       fid <- H5Fopen("hug2020_r.h5")
+       fid$mtcars[c(1,2,3),]
+       H5Fclose(fid)
+       #+end_src
+
+     - =&= - obtain a handle for an HDF5 object
+   - Help system integration
+     #+begin_src R
+     h5const("H5S_SELECT")
+     #+end_src
+
+** Control
+   - You can write C-like programs in R =;-)=
+   - Create files, groups, datasets, and attributes
+   - Examine/control file locking behavior
+     #+begin_src R
+     file <- tempfile()
+     h5testFileLocking(file)
+     #+end_src
+
+   - =rhdf5= exposes a selection of C functions
+     - Control dataset layout, (Gzip) compression level, fill values, MDC size
+     - Group and link manipulation, identifier inspection, hyperslab selections
+** Portablity
+   - R is in the *column-major* camp
+   - =rhdf5= gives users the choice between (HDF5) =native= and column-oriented layout
+     #+begin_src R :results output
+     m <- matrix(rep(1:20, each = 10), ncol = 20, byrow = FALSE)
+     h5write(m, file="hug2020_r.h5", "20x10 (non-native)")
+     h5write(m, file="hug2020_r.h5", "20x10 (native)", native = TRUE)
+     h5dump("hug2020_r.h5")
+     #+end_src
+
+   - Optionally map compound type datasets to dataframes on read
+** Performance
+   - Pretty close to C performance
+   - *Buyer beware:* see for example [[https://bioconductor.org/packages/3.11/bioc/vignettes/rhdf5/inst/doc/practical_tips.html][rhdf5 Practical Tips]] by Mike Smith
+     #+begin_src R :results output
+     m1 <- matrix(rep(1:20000, each = 100), ncol = 20000, byrow = FALSE)
+     ex_file <- tempfile(fileext = ".h5")
+     h5write(m1, file = ex_file, name = "counts", level = 6)
+     # read all columns
+     system.time(
+       res1 <- h5read(file = ex_file, name = "counts", index = list(NULL, 1:10000))
+     )
+     # read every other column
+     index <- list(NULL, seq(from = 1, to = 20000, by = 2))
+     system.time(
+       res2 <- h5read(file = ex_file, name = "counts", index = index)
+     )
+     #+end_src
+
+   - =rhdf5= does the right thing most of the time
+   - Experimentation can be an eyeopener
+** Parallelism
+   ???
+
+* HDFql
+  - HDFql is the first high-level language to manage HDF5 data
+    - See the [[https://www.hdfql.com/resources/HDFqlReferenceManual.pdf][HDFql reference manual]]
+  - Easy to [[https://www.hdfql.com/#download][install]] on Linux, macOS, and Windows
+  - Full disclosure: /I'm a decent SQL user but a beginner-level HDFql user/
+  - Let's go!
+    #+begin_src sh :results silent
+    export PATH=$HOME/hdfql-2.2.0/bin:$PATH
+    export LD_LIBRARY_PATH=$HOME/hdfql-2.2.0/lib:$LD_LIBRARY_PATH
+    #+end_src
+
+** Idiomaticity
+  - Data Definition Language (DDL)
+    #+begin_src sh :results output
+    HDFqlCLI --execute="
+    CREATE FILE hdfql.h5;
+    USE FILE hdfql.h5;
+    CREATE DATASET dset AS COMPOUND(timestamp AS INT, reading AS FLOAT)(0 TO UNLIMITED);
+    SHOW
+    "
+    #+end_src
+
+  - Data Query Language (DQL)
+
+    Select the first and last rows of the =mtcars= dataframe (compound)
+    #+begin_src sh :results output :format panel
+    HDFqlCLI --execute="
+    USE FILE hug2020_r.h5;
+    SELECT FROM mtcars(0::1:1 OR -1:::)
+    "
+    #+end_src
+
+*** TODO: Where did the row names go? Maybe an R =h5write= option?
+
+  - Data Introspection Language (DIL)
+    #+begin_src sh :results output
+    HDFqlCLI --execute="USE FILE hug2020_r.h5; SHOW"
+    #+end_src
+
+** Control
+   - Reading and writing HDF5 data
+   - Supporting chunked/extendible datasets
+   - Supporting hyperslab functionalities
+   - Supporting variable-length datatypes
+   - Configure HDF5 details via DIL
+** Learning Curve
+   - SQL-dialect
+** Portability
+   - Host languages: C, C++, Java, Python, C#, Fortran and R
+   - HDFql API: query execution, cursor and variable management, MPI interaction
+     #+begin_src C
+     A C example
+     #+end_src
+
+** Performance
+   - Overhead depends on the host language integration (?)
+   - I'm not aware of a detailed analysis
+** Parallelism
+   - Using automatic (threaded) parallelism whenever possible
+   - Parallel HDF5 is supported
+     #+begin_src C
+     An MPI example
+     #+end_src
+
+*** TODO: Write an MPI example!
+
+** Abstraction
+   - SQL-like
+   - Style: you have to think in (at least) two languages simultaneously
+   - The more seamless the embedding, the better
