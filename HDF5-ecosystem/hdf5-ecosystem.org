@@ -67,6 +67,13 @@
      h5createFile("hug2020_r.h5")
      h5write(mtcars, file="hug2020_r.h5", "mtcars")
      #+end_src
+   - Save multiple objects
+     #+begin_src R :results silent
+     A = 1:7;  B = 1:18; D = seq(0,1,by=0.1)
+     h5save(A, B, D, file="hug2020_r.h5")
+     h5dump("hug2020_r.h5")
+     #+end_src
+ 
    - Support for operators to extract or replace parts of an object
      - =[= - subset HDF5 datasets (read, write)
      - =$= - read or write HDF5 objects via location (handle) + name reference
