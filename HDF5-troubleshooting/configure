@@ -1,0 +1,60 @@
+#!/bin/sh
+
+prefix=/usr/local
+darshan=false
+gperf=false
+hdf5=false
+
+for arg in "$@"; do
+    case "$arg" in
+    --prefix=*)
+        prefix=`echo $arg | sed 's/--prefix=//'`
+        ;;
+
+    --with-darshan=*)
+        darshan=`echo $arg | sed 's/--with-darshan=//'`
+        ;;
+
+    --with-gperftools=*)
+        gperf=`echo $arg | sed 's/--with-gperftools=//'`
+        ;;
+
+    --with-hdf5=*)
+        hdf5=`echo $arg | sed 's/--with-hdf5=//'`
+        ;;
+
+    --help)
+        echo 'usage: ./configure [options]'
+        echo 'options:'
+        echo '  --prefix=<path>: installation prefix'
+        echo '  --with-darshan=<path>: Darshan installation root'
+        echo '  --with-gperftools=<path>: gperftools (libprofiler) library dir'
+        echo '  --with-hdf5=<path>: HDF5 installation root'
+        echo 'all invalid options are silently ignored'
+        exit 0
+        ;;
+    esac
+done
+
+if test "$darshan" = "false"; then
+    echo 'No Darshan installation specified.'
+    exit 1
+fi
+
+if test "$gperftools" = "false"; then
+    echo 'No gperftools installation specified.'
+    exit 2
+fi
+
+if test "$hdf5" = "false"; then
+    echo 'No HDF5 installation specified.'
+    exit 3
+fi
+
+echo 'generating makefile ...'
+echo "PREFIX = $prefix" >Makefile
+echo "DARSHAN_DIR = $darshan" >>Makefile
+echo "PROFILER_LIB_DIR = $gperftools" >>Makefile
+echo "HDF5_DIR = $hdf5" >>Makefile
+cat Makefile.in >>Makefile
+echo 'configuration complete, type make to build.'
